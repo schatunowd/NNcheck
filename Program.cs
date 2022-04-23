@@ -34,15 +34,13 @@ namespace ConsoleApp1
             psi.CreateNoWindow = true;
             psi.RedirectStandardOutput = true;
             psi.RedirectStandardError = true;
-            var errors = "";
+            string errors;
             var results = "";
             using (var process = Process.Start(psi))
             {
-                Console.WriteLine(psi.Arguments);
                 errors = process.StandardError.ReadToEnd();
                 results = process.StandardOutput.ReadToEnd();
             }
-            Console.WriteLine(results);
             results = results.Substring(1, results.Length - 4);
             results = results.Replace(" ", "");
             string[] subs = results.Split(',');
@@ -59,6 +57,46 @@ namespace ConsoleApp1
                 last_score += Convert.ToInt32(score);
             }
             return scores;
+        }
+
+        static void ResultsWrite(List<string> scores, List<string> positive, List<string> negative, string filename, int type)
+        {
+            double last_score = 0;
+            foreach (string score in scores)
+                last_score += Convert.ToInt32(score);
+            last_score /= scores.Count;
+            last_score *= 10;
+            string path = @"D:\study\4.2\diplom\resultsHistory\" + "results_" + filename;
+            if (!File.Exists(path))
+            {
+                using (StreamWriter sw = File.CreateText(path))
+                {
+                    if (type == 1)
+                        sw.WriteLine("LSTM");
+                    else
+                        sw.WriteLine("Avrgd");
+                    sw.WriteLine("Полученная оценка фильма: " + Math.Round(last_score, 1));
+                    sw.WriteLine("Всего отзывов: " + scores.Count);
+                    sw.WriteLine("Количество положительно определенных отзывов: " + positive.Count);
+                    sw.WriteLine("Количество негативно определенных отзывов: " + negative.Count);
+                    sw.WriteLine();
+                }
+            }
+            else
+            {
+                using (StreamWriter sw = File.AppendText(path))
+                {
+                    if (type == 1)
+                        sw.WriteLine("LSTM");
+                    else
+                        sw.WriteLine("Avrgd");
+                    sw.WriteLine("Полученная оценка фильма: " + Math.Round(last_score, 1));
+                    sw.WriteLine("Всего отзывов: " + scores.Count);
+                    sw.WriteLine("Количество положительно определенных отзывов: " + positive.Count);
+                    sw.WriteLine("Количество негативно определенных отзывов: " + negative.Count);
+                    sw.WriteLine();
+                }
+            }
         }
 
         static List<string> AvrgdPerceptronExec(List<string> comments_new, ref List<string> scores, ref List<string> positive, ref List<string> negative)
@@ -103,24 +141,13 @@ namespace ConsoleApp1
                         sw.WriteLine(comment);
                 }
             }
-            Console.WriteLine("Выберите нейронную сеть:\n1.LSTM\n2.AvrgdPerceptron");
-            int param = Convert.ToInt32(Console.ReadLine());
-            if (param == 1)
-                LSTMExec(comments_new, ref scores, ref positive, ref negative, path);
-            else if (param == 2)
-                AvrgdPerceptronExec(comments_new, ref scores, ref positive, ref negative);
-            else
-                Console.WriteLine("NO FCKN WAY");
-            double last_score = 0;
-            foreach (string score in scores)
-                last_score += Convert.ToInt32(score);
-
-            last_score /= scores.Count;
-            last_score *= 10;
-            Console.WriteLine("Полученная оценка фильма: " + Math.Round(last_score,1));
-            Console.WriteLine("Всего отзывов: " + scores.Count);
-            Console.WriteLine("Количество положительно определенных отзывов: " + positive.Count);
-            Console.WriteLine("Количество негативно определенных отзывов: " + negative.Count);
+            LSTMExec(comments_new, ref scores, ref positive, ref negative, path);
+            ResultsWrite(scores,positive,negative, fileName, 1);
+            scores.Clear();
+            positive.Clear();
+            negative.Clear();
+            AvrgdPerceptronExec(comments_new, ref scores, ref positive, ref negative);
+            ResultsWrite(scores, positive, negative, fileName, 2);
         }
     }
 }
