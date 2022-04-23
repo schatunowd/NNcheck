@@ -22,21 +22,14 @@ namespace ConsoleApp1
             return all_str;
         }
 
-        static List<string> LSTMExec(List<string> comments, ref List<string> scores, ref List<string> positive, ref List<string> negative)
+        static List<string> LSTMExec(List<string> comments, ref List<string> scores, ref List<string> positive, ref List<string> negative, string path)
         {
             var psi = new ProcessStartInfo();
             psi.FileName = "python";
             var script = @"D:/study/4.2/diplom/test.py";
+            path = path.Replace("\\", @"/");
             //int reviews = 1;
-            string arguments = "";
-            for (int i = 0; i < comments.Count; i++)
-            {
-                if (i == comments.Count - 1)
-                    arguments += comments[i];
-                else
-                    arguments += comments[i] + ",";
-            }
-            psi.Arguments = $"\"{script}\" \"{arguments}\"";
+            psi.Arguments = $"\"{script}\" \"{path}\"";
             psi.UseShellExecute = false;
             psi.CreateNoWindow = true;
             psi.RedirectStandardOutput = true;
@@ -49,6 +42,7 @@ namespace ConsoleApp1
                 errors = process.StandardError.ReadToEnd();
                 results = process.StandardOutput.ReadToEnd();
             }
+            Console.WriteLine(results);
             results = results.Substring(1, results.Length - 4);
             results = results.Replace(" ", "");
             string[] subs = results.Split(',');
@@ -96,23 +90,23 @@ namespace ConsoleApp1
             currentTimeForFileName = currentTimeForFileName.Replace(":", "_");
             List<string> comments = KinopoiskParser.Program.ParserExec(filmName, false, out filmNameEn);
             if (filmNameEn == "")
-                fileName = "ruFilm_" + currentTimeForFileName + ".txt";
+                fileName = filmName + "_" + currentTimeForFileName + ".csv";
             else
-                fileName = filmNameEn + "_" + currentTimeForFileName + ".txt";
+                fileName = filmNameEn + "_" + currentTimeForFileName + ".csv";
             string path = @"D:\study\4.2\diplom\history\" + fileName;
             List<string> comments_new = Norm(comments);
             if (!File.Exists(path))
             {
                 using (StreamWriter sw = File.CreateText(path))
                 {
-                    foreach (string comment in comments)
+                    foreach (string comment in comments_new)
                         sw.WriteLine(comment);
                 }
             }
             Console.WriteLine("Выберите нейронную сеть:\n1.LSTM\n2.AvrgdPerceptron");
             int param = Convert.ToInt32(Console.ReadLine());
             if (param == 1)
-                LSTMExec(comments_new, ref scores, ref positive, ref negative);
+                LSTMExec(comments_new, ref scores, ref positive, ref negative, path);
             else if (param == 2)
                 AvrgdPerceptronExec(comments_new, ref scores, ref positive, ref negative);
             else
